@@ -1,7 +1,9 @@
+from fdeplatform.ops import router as ops_router
 from fastapi import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI(title="FDE customer solution")
+app.include_router(ops_router, prefix="/v1")
 REQUIRED = ("customer", "pain", "constraint", "metric", "refusal")
 STORE = []
 
