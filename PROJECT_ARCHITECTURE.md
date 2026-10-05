@@ -13,7 +13,8 @@ This document describes files and symbols in this checkout. Deployment templates
 ```mermaid
 flowchart LR
     M0["src/fdeplatform/main.py"]
-    R["Repository"] -. contains .-> M0
+    M1["src/fdeplatform/ops.py"]
+    M0 -->|imports| M1
 ```
 
 For Python repositories, arrows show resolved local imports, not network calls or deployment order. Otherwise the diagram is a repository component map; containment arrows do not assert runtime integration.
@@ -23,25 +24,65 @@ For Python repositories, arrows show resolved local imports, not network calls o
 | Component | Responsibility |
 | --- | --- |
 | [`src/fdeplatform/main.py`](src/fdeplatform/main.py) | HTTP handlers: `POST /engagements`, `GET /engagements` |
+| [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py) | HTTP handlers: `GET /readyz`, `POST /workspaces`, `GET /workspaces`, `POST /workspaces/{workspace_id}/jobs`, `GET /jobs/{job_id}` |
 | [`requirements.txt`](requirements.txt) | Implementation or supporting configuration |
+| [`Dockerfile`](Dockerfile) | Container build/service configuration |
+| [`Makefile`](Makefile) | Implementation or supporting configuration |
+| [`docker-compose.yml`](docker-compose.yml) | Container build/service configuration |
 | [`tests/test_engagement.py`](tests/test_engagement.py) | Executable checks and regression examples |
+| [`tests/test_ops.py`](tests/test_ops.py) | Executable checks and regression examples |
 | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | GitHub Actions job definitions |
 | [`README.md`](README.md) | Project explanations or operating notes |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Project explanations or operating notes |
+
+## Existing design and operating guides
+
+These checked-in guides provide the project’s detailed design, operational context, or deployment view:
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Request interface
 
 | Method and path | Handler | Source |
 | --- | --- | --- |
-| `POST /engagements` | `create` | [`src/fdeplatform/main.py`](src/fdeplatform/main.py#L18) |
-| `GET /engagements` | `list_engagements` | [`src/fdeplatform/main.py`](src/fdeplatform/main.py#L28) |
+| `POST /engagements` | `create` | [`src/fdeplatform/main.py`](src/fdeplatform/main.py#L20) |
+| `GET /engagements` | `list_engagements` | [`src/fdeplatform/main.py`](src/fdeplatform/main.py#L30) |
+| `GET /readyz` | `readyz` | [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L44) |
+| `POST /workspaces` | `create_workspace` | [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L49) |
+| `GET /workspaces` | `list_workspaces` | [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L66) |
+| `POST /workspaces/{workspace_id}/jobs` | `create_job` | [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L73) |
+| `GET /jobs/{job_id}` | `get_job` | [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L96) |
+| `POST /jobs/{job_id}/approve` | `approve_job` | [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L105) |
+| `GET /audit` | `audit` | [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L122) |
+| `GET /metrics` | `metrics` | [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L138) |
 
 The table lists literal route decorators found in the inspected Python modules. Router prefixes and middleware can add behavior; check the linked handler and application setup before calling an endpoint.
+
+## Validation and failure paths
+
+| Explicit exception | Source |
+| --- | --- |
+| `HTTPException(status_code=404, detail='workspace not found')` | [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L77) |
+| `HTTPException(status_code=404, detail='job not found')` | [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L100) |
+| `HTTPException(status_code=404, detail='job not found')` | [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L109) |
+| `HTTPException(status_code=403, detail='production apply is disabled in this lab')` | [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L113) |
+
+These are explicit exceptions in the inspected source, rather than a claim that every failure is handled. Follow the calling handler to see whether the exception becomes an HTTP response or propagates.
 
 ## Data and state
 
 - [`src/fdeplatform/main.py`](src/fdeplatform/main.py) defines module-level containers: `STORE`.
+- [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py) defines module-level containers: `_WORKSPACES`, `_JOBS`, `_AUDIT`, `_METRICS`.
 
 Module-level dictionaries/lists live in a Python process. They can be fixtures or mutable state; inspect writes before treating them as persistent storage. A production extension would need to define persistence and concurrency behavior explicitly.
+
+## Data flow and design decisions
+
+### What does the operations plane add, and where is its limit
+
+[`src/fdeplatform/ops.py`](src/fdeplatform/ops.py) declares `GET /readyz`, `POST /workspaces`, `GET /workspaces`, `POST /workspaces/{workspace_id}/jobs`, `GET /jobs/{job_id}`, `POST /jobs/{job_id}/approve`, `GET /audit`, `GET /metrics`. Inspect the application’s `include_router` call for its URL prefix.
+
+Its state containers are `_WORKSPACES`, `_JOBS`, `_AUDIT`, `_METRICS`. The job-approval handler defines whether a target is accepted or refused; check that branch and the associated tests instead of treating a recorded job as a successful infrastructure apply.
 
 ## Setup and verification
 
@@ -56,7 +97,7 @@ python -m pytest -q
 
 Python dependencies: [`requirements.txt`](requirements.txt).
 
-Test entry points: [`tests/test_engagement.py`](tests/test_engagement.py).
+Test entry points: [`tests/test_engagement.py`](tests/test_engagement.py), [`tests/test_ops.py`](tests/test_ops.py).
 
 Automation definitions: [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Read their triggers and job steps to determine what CI actually runs.
 
