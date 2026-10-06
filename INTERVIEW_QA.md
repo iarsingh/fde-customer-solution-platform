@@ -65,12 +65,12 @@ This is a concrete regression example from the repository. Its assertions establ
 
 - `POST /engagements` → `create` in [`src/fdeplatform/main.py`](src/fdeplatform/main.py#L20).
 - `GET /engagements` → `list_engagements` in [`src/fdeplatform/main.py`](src/fdeplatform/main.py#L30).
-- `GET /readyz` → `readyz` in [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L44).
-- `POST /workspaces` → `create_workspace` in [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L49).
-- `GET /workspaces` → `list_workspaces` in [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L66).
-- `POST /workspaces/{workspace_id}/jobs` → `create_job` in [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L73).
-- `GET /jobs/{job_id}` → `get_job` in [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L96).
-- `POST /jobs/{job_id}/approve` → `approve_job` in [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L105).
+- `GET /readyz` → `readyz` in [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L74).
+- `POST /workspaces` → `create_workspace` in [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L80).
+- `GET /workspaces` → `list_workspaces` in [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L98).
+- `POST /workspaces/{workspace_id}/jobs` → `create_job` in [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L106).
+- `GET /jobs/{job_id}` → `get_job` in [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L130).
+- `POST /jobs/{job_id}/approve` → `approve_job` in [`src/fdeplatform/ops.py`](src/fdeplatform/ops.py#L140).
 
 These are literal decorators. Application/router prefixes, authentication, and middleware must be checked in the corresponding setup code.
 
