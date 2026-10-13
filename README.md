@@ -1,5 +1,12 @@
 # FDE customer solution platform
 
+## Overview
+
+A capstone that keeps forward deployed engagements honest. Each engagement record needs five fields: customer, pain, constraint, metric and refusal. If any of the last four is missing, `POST /engagements` keeps the status at `draft` and names the gap; a complete record becomes `ready_for_readout`. The `live` flag stays false, so the form can never mark a customer live. A `/v1` ops API adds workspaces, tenant isolation, job approval and audit records.
+
+- **Built with:** Python, pytest, Docker, Docker Compose, GitHub Actions
+- **Scope:** Local capstone lab with tests; it tracks engagement readiness only and refuses production apply.
+
 <!-- project-guide:start -->
 ## Project guide
 
